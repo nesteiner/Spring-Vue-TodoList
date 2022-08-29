@@ -46,20 +46,35 @@
       <button @click="saveEdit">save change</button>
       <button @click="cancelEdit">cancel</button>
       <button @click="deleteTask">delete</button>
+
+      <Column>
+        <template v-for="(fileitem, index) in filelist" :key="index">
+          <Card>
+            <Row cross-axis="center" main-axis="space-between">
+              <div class="name">{{fileitem.name}}</div>
+              <button @click="deleteFile(fileitem)">delete</button>
+            </Row>
+          </Card>
+        </template>
+
+        <Row cross-axis="center" main-axis="space-between">
+          <input type="file" ref="inputFile"/>
+          <button @click="uploadFile">upload</button>
+        </Row>
+      </Column>
     </Drawer>
   </Column>
 </template>
 
 <script lang="ts" setup>
 import {defineEmits, PropType, reactive, ref} from "vue";
-import {Column, Row} from "@/components/layouts";
+import {Column, Row, Expanded} from "@/components/layouts";
 import Card from "@/components/Card.vue"
 import {Dropdown, DropdownItem} from "@/components/dropdown";
 import Dialog from "@/components/Dialog.vue";
-import Expanded from "@/components/layouts/Expanded.vue";
 import Drawer from "@/components/todolist/Drawer.vue";
 
-const props = defineProps({
+defineProps({
   listid: {
     type: Number,
     required: true
@@ -73,10 +88,31 @@ const props = defineProps({
   name: {
     type: String,
     required: true
+  },
+
+  taskid: {
+    type: Number,
+    required: true
+  },
+
+  filelist: {
+    type: Array as PropType<FileItem[]>,
+    required: true
   }
 })
 
-const emits = defineEmits(["add-task", "toggle-task", "rename-tasklist", "delete-tasklist", "rename-task", "delete-task"])
+const emits = defineEmits([
+  "add-task",
+  "toggle-task",
+  "rename-tasklist",
+  "delete-tasklist",
+  "rename-task",
+  "delete-task",
+  "delete-file",
+  "upload-file",
+  "update:taskid"
+])
+
 const textAdd = ref("")
 const textRename = ref("")
 const showRenameDialog = ref(false)
@@ -89,18 +125,23 @@ const currentTask = reactive<Task>({
   listid: 0
 })
 
+const inputFile = ref<HTMLInputElement>();
+
 function addTask() {
   emits("add-task", textAdd.value);
   textAdd.value = ""
 }
 
-function selectTask(task: Task) {
+async function selectTask(task: Task) {
   currentTask.id = task.id
   currentTask.name = task.name
   currentTask.isdone = task.isdone
   currentTask.listid = task.listid
 
   showDrawer.value = true
+  emits("update:taskid", task.id);
+  // let response = await FileItemService.findAll(currentTask.id!)
+  // filelist.value = response.data
 }
 
 function clickCheckbox(task: Task) {
@@ -149,6 +190,22 @@ function deleteTask() {
   })
 
   showDrawer.value = false
+}
+
+function deleteFile(fileitem: FileItem) {
+  emits("delete-file", fileitem)
+}
+
+function uploadFile() {
+  let files = inputFile.value?.files;
+  if(files?.length == 0) {
+    alert("no file selected")
+  } else {
+    // let response = await FileItemService.insertOne(currentTask.id!, files?.item(0)!)
+    // let fileitem = response.data
+    // filelist.value.push(fileitem)
+    emits("upload-file", files?.item(0)!)
+  }
 }
 </script>
 

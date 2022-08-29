@@ -12,15 +12,19 @@
 
 
       <Board class="board"
+             v-model:taskid="currentTaskId"
              :listid="currentTaskListId"
              :name="currentTaskListName"
              :data="tasks"
+             :filelist="filelist"
              @add-task="addTask"
              @toggle-task="toggleTask"
              @delete-tasklist="deleteTaskList"
              @rename-tasklist="renameTaskList"
              @rename-task="renameTask"
              @delete-task="deleteTask"
+             @delete-file="deleteFile"
+             @upload-file="uploadFile"
       />
 
 
@@ -29,9 +33,9 @@
 
 <script lang="ts" setup>
 import {Sidebar, Board} from "@/components/todolist";
-import {Row, Expanded} from "@/components/layouts"
+import {Row} from "@/components/layouts"
 import {onMounted, ref, watch} from "vue";
-import {ListGroupService, TaskListService, TaskService} from "@/api";
+import {FileItemService, ListGroupService, TaskListService, TaskService} from "@/api";
 
 
 const listgroups = ref<ListGroup[]>([]);
@@ -40,9 +44,9 @@ const tasklistmap = ref<Map<number, TaskList[]>>(new Map())
 const currentTaskListId = ref(0)
 const currentTaskListName = ref("")
 const currentTaskListGroupid = ref(0)
-
 const tasks = ref<Task[]>([])
-
+const currentTaskId = ref(0)
+const filelist = ref<FileItem[]>([])
 enum Status {
   Ok = "Ok",
   Err = "Err"
@@ -172,6 +176,25 @@ async function deleteTask(task: Task) {
   }
 }
 
+
+async function deleteFile(fileitem: FileItem) {
+  await FileItemService.deleteOne(fileitem.id!)
+  let index = filelist.value.findIndex(x => x.id == fileitem.id!)
+  if(index != -1) {
+    filelist.value.splice(index, 1)
+  }
+}
+
+async function uploadFile(file: File) {
+  let response = await FileItemService.insertOne(currentTaskId.value, file);
+  if(response.code == Status.Ok) {
+    let fileitem = response.data
+    filelist.value.push(fileitem)
+  } else {
+    alert(response.message)
+  }
+}
+
 watch(currentTaskListId, async (newvalue, _) => {
   if(newvalue == 0) {
     return;
@@ -184,8 +207,17 @@ watch(currentTaskListId, async (newvalue, _) => {
   let task = response.data
   currentTaskListName.value = task.name
   currentTaskListGroupid.value = task.groupid
+
 })
 
+watch(currentTaskId, async (newvalue, _) => {
+  if(newvalue == 0) {
+    return;
+  }
+
+  let response = await FileItemService.findAll(newvalue);
+  filelist.value = response.data
+})
 onMounted(async () => {
   let response = await ListGroupService.findAll();
   listgroups.value = response.data;
