@@ -36,6 +36,7 @@ function mapping(alignment: MainAxisAlignment | CrossAxisAlignment): string {
 <style lang="scss" scoped>
 div.column {
   display: flex;
+  width: fit-content;
   flex-direction: column;
   justify-content: v-bind(mainAxis);
   align-items: v-bind(crossAxis);

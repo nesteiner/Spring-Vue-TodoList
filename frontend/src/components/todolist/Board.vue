@@ -224,6 +224,7 @@ div.task-board {
 
     .head {
       padding: 8px;
+      width: 100%;
     }
 
     .task {
